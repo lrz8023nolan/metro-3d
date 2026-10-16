@@ -1,0 +1,6 @@
+* text=auto
+
+# 生成物/第三方文件：折叠 diff、不计入语言统计
+dist/* linguist-generated=true
+viewer/vendor/* linguist-vendored=true
+cities/beijing/terrain_grid.csv linguist-generated=true

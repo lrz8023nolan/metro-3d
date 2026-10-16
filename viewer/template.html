@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>北京地铁 · 立体线路图 — metro-3d</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#06080c;color:#e8edf4;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  #bg{position:fixed;inset:0;background:
+    radial-gradient(1400px 900px at 68% 16%, rgba(42,60,88,.5), rgba(10,14,20,0) 62%),
+    radial-gradient(1100px 800px at 14% 92%, rgba(28,38,58,.4), rgba(6,8,12,0) 70%),
+    #06080c}
+  canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
+  canvas:active{cursor:grabbing;}
+
+  /* 站名标注层 */
+  #labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .lbl{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;letter-spacing:.02em;
+    color:#f2f5fa;text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 9px rgba(0,0,0,.7);will-change:transform}
+  .lbl .d{margin-left:4px;color:#ffd66b;font-weight:600;font-size:10px}
+  .lbl.est .d{color:rgba(255,255,255,.55);font-weight:400}
+  .lbl.up .d{display:none}
+
+  /* 控制面板 */
+  #panel{position:fixed;top:16px;left:16px;width:276px;padding:14px 16px 12px;border-radius:14px;
+    background:rgba(13,18,26,.8);border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:0 12px 36px rgba(0,0,0,.5);font-size:12px;user-select:none;z-index:10;
+    max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin}
+  #panel h1{font-size:14px;font-weight:600;letter-spacing:.03em}
+  #panel .sub{font-size:11px;color:#93a2b5;margin-top:4px;line-height:1.55}
+  .sect{margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+  .sect .t{font-size:10.5px;color:#8091a6;letter-spacing:.1em;margin-bottom:7px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .row+.row{margin-top:7px}
+  input[type=range]{width:100%;accent-color:#f4da40;height:18px;cursor:pointer;background:transparent}
+  .val{color:#f4da40;font-variant-numeric:tabular-nums;font-size:12px;min-width:36px;text-align:right}
+  .lblmini{color:#c3cddb;font-size:11.5px}
+  .chks{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:2px}
+  .chk{display:flex;align-items:center;gap:6px;color:#c3cddb;font-size:11.5px;cursor:pointer}
+  .chk input{accent-color:#f4da40;cursor:pointer}
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:2px;
+    max-height:170px;overflow-y:auto;padding-right:2px;scrollbar-width:thin}
+  .lchip{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:8px;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);cursor:pointer;
+    font-size:11px;color:#e8edf4;transition:opacity .15s;overflow:hidden;white-space:nowrap}
+  .lchip i{width:8px;height:8px;border-radius:2px;display:inline-block;flex:none}
+  .lchip.off{opacity:.3}
+  .lchip.off i{filter:grayscale(1)}
+  .hdrow{display:flex;align-items:center;justify-content:space-between}
+  .mini{font-size:10px;color:#8091a6;cursor:pointer;padding:2px 7px;border-radius:6px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-left:4px}
+  .mini:hover{color:#dbe4ef;background:rgba(255,255,255,.13)}
+  .btns{display:flex;gap:7px;margin-top:2px}
+  .btn{flex:1;padding:6px 0;border-radius:9px;border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);color:#dbe4ef;font-size:11.5px;cursor:pointer;
+    transition:background .15s;font-family:inherit}
+  .btn:hover{background:rgba(255,255,255,.13)}
+  .btn:active{transform:translateY(1px)}
+  #panel .foot{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07);
+    font-size:10.5px;color:#7c8ba0;line-height:1.65}
+  #panel .foot b{color:#aab7c9;font-weight:500}
+  #panel .foot a{color:#9db4d6;text-decoration:none;border-bottom:1px dotted rgba(157,180,214,.45)}
+
+  /* 站点信息卡 */
+  #card{position:fixed;right:16px;bottom:16px;width:300px;max-height:64vh;overflow:auto;
+    padding:14px 16px 12px;border-radius:14px;background:rgba(13,18,26,.85);
+    border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:0 12px 36px rgba(0,0,0,.5);font-size:12px;z-index:11;display:none}
+  #card .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  #card h2{font-size:15px;font-weight:600}
+  #card h2 small{font-size:10.5px;color:#8b9ab0;font-weight:400;margin-left:6px}
+  #card .x{cursor:pointer;color:#7c8ba0;font-size:15px;line-height:1;padding:2px 4px;border-radius:6px}
+  #card .x:hover{background:rgba(255,255,255,.1);color:#fff}
+  #card .chipsline{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chip-s{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;
+    background:rgba(255,255,255,.08);font-size:11px;color:#e8edf4}
+  .chip-s i{width:8px;height:8px;border-radius:50%;display:inline-block}
+  #card .kv{margin-top:10px;display:grid;grid-template-columns:64px 1fr;gap:6px 10px;font-size:12px;line-height:1.5}
+  #card .kv .kk{color:#8b9ab0;font-size:11px;padding-top:1px}
+  #card .kv .vv{color:#e9eef6;overflow-wrap:anywhere}
+  #card .kv .vv b{color:#fff}
+  #card .src{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.08);
+    font-size:10.5px;color:#7c8ba0;line-height:1.6}
+  .pill{display:inline-block;padding:1px 7px;border-radius:6px;font-size:10.5px;margin-left:4px;
+    background:rgba(255,214,107,.16);color:#ffd66b;vertical-align:1px}
+  .pill.lo{background:rgba(255,255,255,.1);color:#aab7c9}
+
+  /* 提示与报错 */
+  #hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);padding:8px 16px;border-radius:999px;
+    background:rgba(13,18,26,.75);border:1px solid rgba(255,255,255,.09);color:#c3cddb;font-size:11.5px;
+    backdrop-filter:blur(8px);z-index:9;transition:opacity .8s;pointer-events:none}
+  #fatal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:#0a0d13;color:#e8edf4;font-size:14px;z-index:99;text-align:center;line-height:2}
+  #err{position:fixed;left:16px;bottom:16px;max-width:60vw;padding:10px 14px;border-radius:10px;
+    background:rgba(120,30,30,.85);color:#ffe3e3;font-size:11px;display:none;z-index:98;
+    font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+
+<div id="panel">
+  <h1>北京地铁 · 立体线路图 <span style="font-weight:400;color:#8b9ab0;font-size:11px">v1.0</span></h1>
+  <div class="sub">全网 29 条线路 · 424 座车站 · 541 个站台层<br>拖动旋转 · 滚轮缩放 · 右键平移 · 点击站点看详情</div>
+
+  <div class="sect">
+    <div class="t">纵 向 比 例</div>
+    <div class="row"><span class="lblmini">垂直夸张</span><span class="val" id="kVal">×80</span></div>
+    <input type="range" id="kRange" min="5" max="150" step="5" value="80">
+    <div class="row" style="margin-top:6px"><span class="lblmini">埋深强化（仅地下段）</span><span class="val" id="gVal">×3</span></div>
+    <input type="range" id="gRange" min="1" max="6" step="1" value="3">
+  </div>
+
+  <div class="sect">
+    <div class="t">显 示</div>
+    <div class="chks">
+      <label class="chk"><input type="checkbox" id="ckTerrain" checked>地形面</label>
+      <label class="chk"><input type="checkbox" id="ckLabels" checked>站名</label>
+      <label class="chk"><input type="checkbox" id="ckRotate" checked>自动旋转</label>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="hdrow"><span class="t" style="margin-bottom:0">线 路</span><span><span class="mini" id="lnOn">全显</span><span class="mini" id="lnOff">全隐</span></span></div>
+    <div class="chips" id="lineChips" style="margin-top:8px"></div>
+  </div>
+
+  <div class="sect">
+    <div class="t">视 角</div>
+    <div class="btns">
+      <button class="btn" id="vIso">斜视</button>
+      <button class="btn" id="vSide">剖面</button>
+      <button class="btn" id="vTop">俯视</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    站名旁数字为车站埋深：<b>34m</b>＝实测（36 站有公开工程数据）<br>
+    <b>~31m</b>＝估算（低置信度）；地面/高架站无埋深。<br>
+    远山为压缩显示。数据：OSM（ODbL）· 维基百科（CC BY-SA）· SRTM 30m<br>
+    开源项目 · <a href="https://github.com/lrz8023nolan/metro-3d" target="_blank" rel="noopener">github.com/lrz8023nolan/metro-3d</a>
+  </div>
+</div>
+
+<div id="card"></div>
+<div id="hint">拖动旋转 · 滚轮缩放 · 右键平移 · 点击站点查看详情</div>
+<div id="fatal"><div>当前环境不支持 WebGL，无法渲染三维视图。<br>请用 Edge / Chrome 打开本文件。</div></div>
+<div id="err"></div>
+
+<script>/*__THREE__*/</script>
+<script>/*__DATA__*/</script>
+<script>
+window.addEventListener('error', function (e) {
+  var el = document.getElementById('err');
+  if (el) { el.style.display = 'block'; el.textContent = 'JS 错误: ' + (e.message || e.type); }
+});
+</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

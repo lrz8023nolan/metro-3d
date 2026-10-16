@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate city data（数据集校验）
+        run: python tests/validate_data.py
+      - name: Build single-file viewer（构建单文件查看器）
+        run: python scripts/build.py --city beijing
+      - name: Check build output
+        run: test -f dist/beijing.html && ls -lh dist/

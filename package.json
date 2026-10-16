@@ -1,0 +1,14 @@
+{
+  "name": "metro-3d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vertical-exaggerated, single-file 3D metro maps (Beijing first). 立体版地铁线路图。",
+  "scripts": {
+    "build": "python scripts/build.py --city beijing",
+    "test:data": "python tests/validate_data.py",
+    "test:render": "node tests/verify_render.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.0"
+  }
+}

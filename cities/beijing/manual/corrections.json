@@ -1,0 +1,90 @@
+{
+  "_说明": "人工修正层（OSM/自动流程勘误）。每条含理由。站名均为规范化后名称（不含‘站’字，除非站名本身含‘站’）。",
+  "station_additions": [
+    {
+      "name": "八角游乐园",
+      "name_en": "Bajiao Amusement Park",
+      "lines": ["1"],
+      "insert_before": "古城",
+      "lat": 39.9061539,
+      "lon": 116.2064861,
+      "status": "suspended",
+      "note": "OSM 线路关系缺该站节点（站名被标为‘八角游乐园（封闭改造中）’）。2025-06-02 起封站改造、列车通过不停车，计划 2027-05 恢复运营（1号线支线接轨改造）。"
+    },
+    {
+      "name": "上地软件园",
+      "name_en": "Shangdi Software Park",
+      "lines": ["18"],
+      "insert_before": "回龙观东大街",
+      "lat": 40.043537,
+      "lon": 116.2805664,
+      "status": "operational",
+      "note": "18号线 2025-12-27 开通；OSM 线路关系仅含 6 站，缺 5 站。坐标取自 OSM 独立节点。"
+    },
+    {
+      "name": "东北旺",
+      "name_en": "Dongbeiwang",
+      "lines": ["18"],
+      "insert_before": "回龙观东大街",
+      "lat": 40.051835,
+      "lon": 116.2887219,
+      "status": "operational",
+      "note": "同上（18号线缺口站）"
+    },
+    {
+      "name": "龙泽西",
+      "name_en": "Longzexi",
+      "lines": ["18"],
+      "insert_before": "回龙观东大街",
+      "lat": 40.0714794,
+      "lon": 116.3040433,
+      "status": "operational",
+      "note": "同上（18号线缺口站）"
+    },
+    {
+      "name": "回龙观西大街",
+      "name_en": "Huilongguan Xidajie",
+      "lines": ["18"],
+      "insert_before": "回龙观东大街",
+      "lat": 40.0772781,
+      "lon": 116.3245924,
+      "status": "operational",
+      "note": "同上（18号线缺口站）"
+    },
+    {
+      "name": "文华路",
+      "name_en": "Wenhualu",
+      "lines": ["18"],
+      "insert_before": "回龙观东大街",
+      "lat": 40.0788401,
+      "lon": 116.3356615,
+      "status": "operational",
+      "note": "同上（18号线缺口站）"
+    },
+    {
+      "name": "朱房北",
+      "name_en": "Zhufangbei",
+      "lines": ["cp"],
+      "insert_before": "清河站",
+      "lat": 40.0347054,
+      "lon": 116.3259094,
+      "status": "operational",
+      "note": "昌平线南延站点（2024-12-15 开通）；OSM 线路关系缺该站节点。"
+    }
+  ],
+  "station_renames": {
+    "首都机场3号航站楼": "3号航站楼",
+    "首都机场2号航站楼": "2号航站楼"
+  },
+  "sequence_fixes": {},
+  "ring_dedupe": ["2", "10"],
+  "excluded_stations": [
+    {"name": "福寿岭", "line": "1", "reason": "未开通（2026-05 报道仍暂不投用）"},
+    {"name": "53号站", "line": "1", "reason": "未启用（战备车站，编号53号站）"},
+    {"name": "陶然桥", "line": "14", "reason": "未开通（缓建）"},
+    {"name": "高家园", "line": "14", "reason": "14号线部分未开通（12号线部分已于2024-12-15开通）"},
+    {"name": "广渠门外", "line": "17", "reason": "未开通（缓建）"},
+    {"name": "老观里", "line": "t1", "reason": "未开通"}
+  ],
+  "_排除说明": "以上为「线路列表中进入 wiki 表格但当前未运营」的车站；其余未运营线路（22号线、28号线、13号线拆分、1号线支线、M101 等）整体不在本数据集范围内。"
+}
