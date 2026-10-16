@@ -23,6 +23,14 @@ async function launch() {
   return chromium.launch(opts); // 回退：自带 chromium（若已安装）
 }
 
+/* 等相机动画真正结束再操作。
+ * 注意：软件渲染（swiftshader）下帧率低、帧间 dt 被钳制，
+ * tween 的实际时长会比 0.9s 长若干倍——固定 sleep 不可靠。 */
+async function waitTween(page) {
+  await page.waitForFunction(() => window.__debug.tween && !window.__debug.tween.on, null, { timeout: 30000 });
+  await page.waitForTimeout(400);
+}
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await launch();
@@ -44,11 +52,11 @@ async function launch() {
 
   await page.click('#ckRotate');
   await page.click('#vSide');
-  await page.waitForTimeout(1600);
+  await waitTween(page);
   await page.screenshot({ path: path.join(OUT, 'b_side.png') });
 
   await page.click('#vTop');
-  await page.waitForTimeout(1600);
+  await waitTween(page);
   await page.screenshot({ path: path.join(OUT, 'c_top.png') });
 
   await page.$eval('#kRange', el => { el.value = 80; el.dispatchEvent(new Event('input')); });
@@ -58,7 +66,7 @@ async function launch() {
   // 点击「东四」站（真值站）：固定视角 → 命中校验 → 点击（保证确定性）
   await page.$eval('#kRange', el => { el.value = 50; el.dispatchEvent(new Event('input')); });
   await page.click('#vIso');
-  await page.waitForTimeout(1400);
+  await waitTween(page);
   await page.evaluate(() => {
     const D = window.METRO_DATA, M = D.meta;
     const st = D.lines.find(l => l.id === '6').stations.find(s => s.n === '东四');
@@ -69,7 +77,7 @@ async function launch() {
     o.target.y = -1200;
     o.dist = 9000; o.phi = 1.30; o.theta = Math.PI / 2 - 0.3;
   });
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(600);
   const pos = await page.evaluate(() => {
     const p = window.__debug.screenOf('东四');
     if (!p) return null;

@@ -83,10 +83,10 @@
 
 ## 附属文件
 
-- **`terrain_grid.csv`** —— `lat,lon,elevation_m`，覆盖线网 bbox 的 0.01° 网格
-  （SRTM 30 m）。构建时做双线性采样。
+- **`terrain_grid.csv`** —— `lat,lon,elevation_m,dataset`，覆盖线网 bbox 的
+  0.01° 网格（SRTM 30 m）。构建时做双线性采样。
 - **`wiki_line_stations.csv`** —— 逐线车站行
-  （`line,name,seq,name_en,laying,open_date,district,platform,transfers`）。
+  （`line,seq,name,name_en,district,open_date,laying,platform,transfers`）。
   之所以"逐线"，是因为同一换乘站在不同线路上的属性不同。
 - **`manual/`** —— `corrections.json`（改名、排除、状态修正）与
   `depth_news.json`（带链接与置信度的媒体报道数据）。

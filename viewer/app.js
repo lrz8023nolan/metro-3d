@@ -1,4 +1,4 @@
-/* 北京地铁立体线路图 · 全网络（29 条线）—— three.js 单文件原型
+/* metro-3d · 北京地铁立体线路图（29 条线）—— three.js 单文件查看器
    交互：拖动旋转 / 滚轮缩放 / 右键(或 Shift)平移 / 点击站点查看详情
    纵向映射：y = SOFT·tanh((alt-REF)/SOFT)·k（远山软压缩）
    地下段：y = 地面映射值 − 埋深 × 埋深强化 × k
@@ -413,7 +413,7 @@
       '<div class="kv">' + rows.map(function (r) {
         return '<div class="kk">' + r[0] + '</div><div class="vv">' + r[1] + '</div>';
       }).join('') + '</div>' +
-      '<div class="src">数据：OpenStreetMap · 维基百科 · SRTM 30m ｜ 立体原型（全网络）</div>';
+      '<div class="src">数据：OpenStreetMap · 维基百科 · SRTM 30m ｜ metro-3d v1.0</div>';
     card.style.display = 'block';
     document.getElementById('cardX').onclick = function () { card.style.display = 'none'; };
   }
@@ -515,7 +515,7 @@
       }
       return null;
     },
-    state: state, orbit: orbit,
+    state: state, orbit: orbit, tween: tween,
     visibleStations: function () {
       var out = [];
       for (var li = 0; li < LINES.length; li++) {

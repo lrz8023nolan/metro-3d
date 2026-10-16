@@ -84,10 +84,10 @@ in Chinese where they describe source wording (地下/高架/…); keep them as-
 
 ## Auxiliary files
 
-- **`terrain_grid.csv`** — `lat,lon,elevation_m`, 0.01° grid covering the
-  network bbox (SRTM 30 m). The build samples it bilinearly.
+- **`terrain_grid.csv`** — `lat,lon,elevation_m,dataset`, 0.01° grid covering
+  the network bbox (SRTM 30 m). The build samples it bilinearly.
 - **`wiki_line_stations.csv`** — per-line station rows
-  (`line,name,seq,name_en,laying,open_date,district,platform,transfers`).
+  (`line,seq,name,name_en,district,open_date,laying,platform,transfers`).
   Per-line because attributes differ between lines of one interchange.
 - **`manual/`** — `corrections.json` (renames, exclusions, status fixes) and
   `depth_news.json` (sourced media figures with URL + confidence).
