@@ -1,8 +1,8 @@
-/* metro-3d · 北京地铁立体线路图（29 条线）—— three.js 单文件查看器
+/* metro-3d · 立体地铁线路图查看器（数据驱动，任意城市）
    交互：拖动旋转 / 滚轮缩放 / 右键(或 Shift)平移 / 点击站点查看详情
    纵向映射：y = SOFT·tanh((alt-REF)/SOFT)·k（远山软压缩）
    地下段：y = 地面映射值 − 埋深 × 埋深强化 × k
-   拾取：屏幕空间最近站点（全网 541 个站台层实例仍流畅）
+   拾取：屏幕空间最近站点（数百站台层实例仍流畅）
 */
 (function () {
   'use strict';
@@ -10,6 +10,7 @@
   var DATA = window.METRO_DATA;
   if (!DATA) { document.getElementById('fatal').style.display = 'flex'; return; }
   var M = DATA.meta;
+  var APP = window.METRO_APP || {};
 
   var KX = 111320 * Math.cos(M.lat0 * Math.PI / 180);
   var KY = 110540;
@@ -404,7 +405,7 @@
     else rows.push(['埋深', '—']);
     rows.push(['地面高程', st.g + ' m <span style="color:#8b9ab0;font-size:10.5px">（SRTM 30m）</span>']);
     if (st.open) rows.push(['开通', st.open]);
-    if (st.status) rows.push(['状态', '暂停运营（改造中）']);
+    if (st.status) rows.push(['状态', '暂停运营']);
     if (st.dk === 'truth' || st.dk === 'est') rows.push(['数据来源', '<span style="font-size:11px">' + st.src + '</span>']);
     if (st.note) rows.push(['备注', '<span style="font-size:11px">' + st.note + '</span>']);
 
@@ -413,7 +414,7 @@
       '<div class="kv">' + rows.map(function (r) {
         return '<div class="kk">' + r[0] + '</div><div class="vv">' + r[1] + '</div>';
       }).join('') + '</div>' +
-      '<div class="src">数据：OpenStreetMap · 维基百科 · SRTM 30m ｜ metro-3d v1.0</div>';
+      '<div class="src">' + (M.credits ? M.credits + ' ｜ ' : '') + 'metro-3d v' + (APP.version || '') + '</div>';
     card.style.display = 'block';
     document.getElementById('cardX').onclick = function () { card.style.display = 'none'; };
   }

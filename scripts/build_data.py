@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """Metro-3D · 城市数据集 → 运行时数据（window.METRO_DATA）
 
-City dataset → runtime data.  Reads cities/<city>/ (city.json, terrain_grid.csv,
-wiki_line_stations.csv, build_config.json) and writes build/<city>_data.js.
+City dataset → runtime data.  Reads cities/<city>/ and writes build/<city>_data.js.
+
+必需 / Required:  city.json
+可选 / Optional:  build_config.json（缺省用内置默认值）
+                  terrain_grid.csv（缺省时地面高程按 0 处理）
+                  wiki_line_stations.csv（缺省时逐线属性回退为 station 合并值）
 
 用法 / Usage:  python scripts/build_data.py --city beijing
 
@@ -112,6 +116,29 @@ def project_to_polyline(geom, s, lat, lon, lon0, lat0, KX, KY):
             s[i] + t * (s[i + 1] - s[i]))
 
 
+DEFAULT_CONFIG = {
+    "truth_line": {},
+    "notes": {},
+    "line_default_depth": {},
+    "depth_anchors": {},
+    "offsets": {"高架": 8.0, "地面": 1.2, "半地下": -3.5},
+    "tram_ground_offset": 0.4,
+    "tram_lines": [],
+    "wiki_alias": {},
+    "fallback_colour": {},
+    "measure_cn": {},
+}
+
+
+def load_config(city_dir):
+    """读取 build_config.json；缺失的键用默认值补齐（最小城市数据包可只提供 city.json）。"""
+    cfg = dict(DEFAULT_CONFIG)
+    path = os.path.join(city_dir, "build_config.json")
+    if os.path.exists(path):
+        cfg.update(json.load(open(path, encoding="utf-8")))
+    return cfg
+
+
 def main():
     ap = argparse.ArgumentParser(description="Build runtime data.js for a city")
     ap.add_argument("--city", default="beijing", help="cities/ 下的城市 id")
@@ -122,7 +149,7 @@ def main():
     build_dir = os.path.join(root, "build")
     os.makedirs(build_dir, exist_ok=True)
 
-    cfg = json.load(open(os.path.join(city_dir, "build_config.json"), encoding="utf-8"))
+    cfg = load_config(city_dir)
     truth_line = cfg["truth_line"]
     notes = cfg["notes"]
     line_default = cfg["line_default_depth"]
@@ -135,8 +162,17 @@ def main():
     meas_cn = cfg["measure_cn"]
 
     d = json.load(open(os.path.join(city_dir, "city.json"), encoding="utf-8"))
-    lats, lons, grid = load_terrain(os.path.join(city_dir, "terrain_grid.csv"))
-    sample = make_sampler(lats, lons, grid)
+    problems = []
+
+    terrain_path = os.path.join(city_dir, "terrain_grid.csv")
+    if os.path.exists(terrain_path):
+        lats, lons, grid = load_terrain(terrain_path)
+        sample = make_sampler(lats, lons, grid)
+    else:
+        grid = {}
+        sample = lambda lat, lon: 0.0
+        problems.append("未找到 terrain_grid.csv：地面高程按 0 处理（地形面为平面）")
+
     master = {s["name"]: s for s in d["stations"]}
 
     # 全局投影基准（与前端一致）：全网 bbox 中心为原点
@@ -147,10 +183,13 @@ def main():
     KY = 110540
 
     wiki = {}
-    for r in csv.DictReader(open(os.path.join(city_dir, "wiki_line_stations.csv"), encoding="utf-8-sig")):
-        wiki.setdefault(r["line"], {})[r["name"]] = r
+    wiki_path = os.path.join(city_dir, "wiki_line_stations.csv")
+    if os.path.exists(wiki_path):
+        for r in csv.DictReader(open(wiki_path, encoding="utf-8-sig")):
+            wiki.setdefault(r["line"], {})[r["name"]] = r
+    else:
+        problems.append("未找到 wiki_line_stations.csv：逐线属性回退为 station 合并值")
 
-    problems = []
     out_lines = []
     n_truth = n_est = n_above = 0
 
@@ -223,7 +262,8 @@ def main():
         # ---- 地下段独立插值 ----
         # 只用"地下类"控制点（真值/估算锚点/半地下 + 两端缺省封口），
         # 避免被地面/高架站拖拽（如 1 号线国贸曾被四惠的 +1.2 拉成 −2m）
-        pads = [(0.0, -float(line_default[lid])), (L, -float(line_default[lid]))]
+        default_depth = float(line_default.get(lid, 20.0))
+        pads = [(0.0, -default_depth), (L, -default_depth)]
         ug_pts = dedupe_pts(pads + [(st_pos[nm][1], st_val[nm][0]) for nm in seq
                                     if st_val[nm] is not None and st_val[nm][0] < 0])
         ug_at = interp_factory(ug_pts)
@@ -309,6 +349,7 @@ def main():
     ref_alt = min(elev)
 
     # lat0/lon0/KX/KY 已在 main() 开头按原始几何计算，这里直接复用（前端同基准）
+    ui = (d.get("meta") or {}).get("ui") or {}
     data = {
         "meta": {
             "lat0": lat0, "lon0": lon0, "ref_alt": ref_alt,
@@ -316,6 +357,7 @@ def main():
                         "cols": cols, "rows": rows, "elev": elev},
             "palette": {l["id"]: l["colour"] for l in out_lines},
             "line_names": {l["id"]: l["name"].split("（")[0] for l in out_lines},
+            "credits": ui.get("credits", ""),
             "counts": {"lines": len(out_lines),
                        "stations": len(by_name),
                        "instances": sum(len(l["stations"]) for l in out_lines),
@@ -326,6 +368,15 @@ def main():
     js = "window.METRO_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n"
     out = os.path.join(build_dir, args.city + "_data.js")
     open(out, "w", encoding="utf-8").write(js)
+
+    summary = {
+        "city": args.city,
+        "name": (d.get("meta") or {}).get("name", args.city),
+        "generated": (d.get("meta") or {}).get("generated"),
+        "counts": data["meta"]["counts"],
+    }
+    with open(os.path.join(build_dir, args.city + "_summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=1)
 
     print(f"[{args.city}] 输出: {out}  ({len(js)/1024:.0f} KB)")
     print(f"线路 {len(out_lines)} | 站位实例 {data['meta']['counts']['instances']} | "

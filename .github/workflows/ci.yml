@@ -13,8 +13,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate city data（数据集校验）
-        run: python tests/validate_data.py
-      - name: Build single-file viewer（构建单文件查看器）
-        run: python scripts/build.py --city beijing
+        run: python tests/validate_data.py --all
+      - name: Build all cities（构建全部城市 + 城市索引）
+        run: python scripts/build.py --all
       - name: Check build output
-        run: test -f dist/beijing.html && ls -lh dist/
+        run: test -f dist/index.html && test -f dist/beijing.html && ls -lh dist/

@@ -5,13 +5,37 @@
 Everything the viewer renders comes from a **city package** under
 `cities/<city-id>/`:
 
-| File | Role |
-|---|---|
-| `city.json` | canonical dataset (lines + stations) |
-| `build_config.json` | build-time parameters for the vertical / depth model |
-| `terrain_grid.csv` | ground elevation grid: `lat,lon,elevation_m` (0.01° step) |
-| `wiki_line_stations.csv` | per-line station attributes (laying / opening / platform …) |
-| `manual/` | hand-curated corrections & sourced figures (Beijing) |
+| File | Required | Role |
+|---|---|---|
+| `city.json` | **yes** | canonical dataset (lines + stations + viewer copy) |
+| `build_config.json` | no | build-time parameters for the vertical / depth model |
+| `terrain_grid.csv` | no | ground elevation grid: `lat,lon,elevation_m` (0.01° step) |
+| `wiki_line_stations.csv` | no | per-line station attributes (laying / opening / platform …) |
+| `manual/` | no | hand-curated corrections & sourced figures (Beijing collection) |
+
+### Minimal city package
+
+`city.json` alone is enough to build a viewer — everything else degrades
+gracefully.
+
+```json
+{
+  "meta": { "city": "yourcity", "name": "Your City Metro", "generated": "2026-10-01" },
+  "lines": [
+    { "id": "1", "name": "Line 1", "colour": "#E4002B", "length_km": 30.0,
+      "station_sequence": ["A", "B"],
+      "geometry": [[116.30, 39.90], [116.40, 39.90]] }
+  ],
+  "stations": [
+    { "id": "A", "name": "A", "lat": 39.90, "lon": 116.30, "lines": ["1"],
+      "status": "operational", "laying": "地下" },
+    { "id": "B", "name": "B", "lat": 39.90, "lon": 116.40, "lines": ["1"],
+      "status": "operational", "laying": "地下" }
+  ]
+}
+```
+
+Run `python scripts/build.py --city yourcity` → `dist/yourcity.html`.
 
 `tests/validate_data.py` checks the invariants below. Enum values are authored
 in Chinese where they describe source wording (地下/高架/…); keep them as-is.
@@ -26,8 +50,22 @@ in Chinese where they describe source wording (地下/高架/…); keep them as-
 | `generated` | string | snapshot date, `YYYY-MM-DD` |
 | `crs` | string | coordinate note — **WGS-84**; convert before mixing with GCJ-02 basemaps |
 | `sources` | string[] | human-readable source list |
-| `counts` | object | `{lines, stations, stations_with_depth, stations_with_elevation, stations_with_laying}` — verified against the arrays |
+| `bbox` | `[lon_min, lon_max, lat_min, lat_max]` | optional; used by the validator |
+| `counts` | object | optional; `{lines, stations, stations_with_depth, …}` — verified against the arrays when present |
 | `disclaimers` | string[] | known caveats |
+| `ui` | object | optional viewer copy, see below |
+
+### `meta.ui` (optional viewer copy)
+
+| Field | Used as | Placeholders |
+|---|---|---|
+| `title` | panel heading | — |
+| `page_title` | document `<title>` | — |
+| `subtitle` | line below the heading | `{lines}` `{stations}` `{instances}` `{truth}` |
+| `footer_html` | panel footer (small HTML allowed) | same |
+| `credits` | station-card footer line | — |
+
+Missing fields fall back to `meta.name` + generic Chinese defaults.
 
 ### `lines[]`
 
@@ -67,7 +105,11 @@ in Chinese where they describe source wording (地下/高架/…); keep them as-
 | `depth_alt` | string[] | alternative figures kept for reference |
 | `notes` | string[] | |
 
-## `build_config.json`
+## `build_config.json` (optional)
+
+All keys are optional; missing values fall back to built-in defaults (no
+documented depths, 20 m line default, standard above-ground offsets, no tram
+lines). A city package with only `city.json` builds fine.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -82,22 +124,25 @@ in Chinese where they describe source wording (地下/高架/…); keep them as-
 | `fallback_colour` | `{line_id: #RRGGBB}` | used when the dataset has no colour |
 | `measure_cn` | `{measure: label}` | UI labels for depth measures |
 
-## Auxiliary files
+## Optional files
 
-- **`terrain_grid.csv`** — `lat,lon,elevation_m,dataset`, 0.01° grid covering
-  the network bbox (SRTM 30 m). The build samples it bilinearly.
-- **`wiki_line_stations.csv`** — per-line station rows
-  (`line,seq,name,name_en,district,open_date,laying,platform,transfers`).
-  Per-line because attributes differ between lines of one interchange.
-- **`manual/`** — `corrections.json` (renames, exclusions, status fixes) and
-  `depth_news.json` (sourced media figures with URL + confidence).
+Everything except `city.json` is optional; the build degrades gracefully.
+
+| File | If provided | If missing |
+|---|---|---|
+| `build_config.json` | depth model parameters (above) | defaults: no documented depths, 20 m line default |
+| `terrain_grid.csv` (`lat,lon,elevation_m,dataset`) | bilinear ground sampling + terrain mesh | ground elevation = 0 (flat terrain) |
+| `wiki_line_stations.csv` (`line,seq,name,name_en,district,open_date,laying,platform,transfers`) | per-line station attributes | falls back to the merged `stations[]` values |
+| `manual/` | hand-curated corrections (Beijing collection only) | not used by the build |
 
 ## Derived runtime data (build output)
 
-`scripts/build_data.py` writes `build/<city>_data.js` (`window.METRO_DATA`):
+`scripts/build_data.py` writes `build/<city>_data.js` (`window.METRO_DATA`)
+and `build/<city>_summary.json` (counts + display name, used by
+`build_html.py` and the generated city index):
 
 - `meta` — projection origin (`lat0`, `lon0`), `ref_alt`, terrain subset,
-  palette, line names, counts
+  palette, line names, credits, counts
 - `lines[]` — `geometry` becomes `[lon, lat, ground, track]` 4-tuples;
   stations gain `g` (ground) `t` (track) `dep` (depth) `dk`
   (`truth|est|above`) `lab` (label-dedup flag) `src` / `conf` / `meas`

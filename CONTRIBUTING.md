@@ -16,15 +16,14 @@ Thanks for helping make accurate metro depth maps!
 
 ## Adding a city
 
-1. Create `cities/<city-id>/` following [docs/schema.md](docs/schema.md):
-   `city.json`, `build_config.json`, `terrain_grid.csv` and any per-line
-   attribute table.
-2. Run `python tests/validate_data.py` — it currently targets Beijing; extend
-   it for your city (a `--city` flag is welcome).
-3. Run `python scripts/build.py --city <city-id>` — it must produce
-   `dist/<city-id>.html` without errors. If you can, run
-   `node tests/verify_render.js`.
-4. Open a PR that describes your data sources and their licenses.
+1. Create `cities/<city-id>/` with a **`city.json`** — the only required file.
+   Optional extras (`build_config.json`, `terrain_grid.csv`, per-line
+   attributes) are described in [docs/schema.md](docs/schema.md).
+2. Validate: `python tests/validate_data.py --city <city-id>`.
+3. Build: `python scripts/build.py --city <city-id>` → `dist/<city-id>.html`.
+   `--all` rebuilds every city plus the index page.
+4. If you can, run `node tests/verify_render.js <city-id>`.
+5. Open a PR describing your data sources and their licenses.
 
 ## Data quality rules
 

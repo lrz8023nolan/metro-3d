@@ -20,7 +20,19 @@
   "disclaimers": [
    "埋深数据为公开资料汇编，口径不一（底板/轨面/报道口径），置信度见 depth_conf；插值补齐见后续流程。",
    "八角游乐园站封站改造中（通过不停车），status=suspended。"
-  ]
+  ],
+  "bbox": [
+   115.8,
+   117.2,
+   39.4,
+   40.7
+  ],
+  "ui": {
+   "title": "北京地铁 · 立体线路图",
+   "subtitle": "全网 {lines} 条线路 · {stations} 座车站 · {instances} 个站台层",
+   "footer_html": "站名旁数字为车站埋深：<b>34m</b>＝实测（{truth} 个站台层有公开工程数据）<br><b>~31m</b>＝估算（低置信度）；地面/高架站无埋深。<br>远山为压缩显示。",
+   "credits": "数据：OSM（ODbL）· 维基百科（CC BY-SA）· SRTM 30m"
+  }
  },
  "lines": [
   {

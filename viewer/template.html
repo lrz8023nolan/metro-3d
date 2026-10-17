@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>北京地铁 · 立体线路图 — metro-3d</title>
+<title>{{PAGE_TITLE}}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#06080c;color:#e8edf4;
@@ -106,8 +106,8 @@
 <div id="labels"></div>
 
 <div id="panel">
-  <h1>北京地铁 · 立体线路图 <span style="font-weight:400;color:#8b9ab0;font-size:11px">v1.0</span></h1>
-  <div class="sub">全网 29 条线路 · 424 座车站 · 541 个站台层<br>拖动旋转 · 滚轮缩放 · 右键平移 · 点击站点看详情</div>
+  <h1>{{CITY_TITLE}} <span style="font-weight:400;color:#8b9ab0;font-size:11px">v{{VERSION}}</span></h1>
+  <div class="sub">{{CITY_SUB}}<br>拖动旋转 · 滚轮缩放 · 右键平移 · 点击站点看详情</div>
 
   <div class="sect">
     <div class="t">纵 向 比 例</div>
@@ -141,10 +141,8 @@
   </div>
 
   <div class="foot">
-    站名旁数字为车站埋深：<b>34m</b>＝实测（36 站有公开工程数据）<br>
-    <b>~31m</b>＝估算（低置信度）；地面/高架站无埋深。<br>
-    远山为压缩显示。数据：OSM（ODbL）· 维基百科（CC BY-SA）· SRTM 30m<br>
-    开源项目 · <a href="https://github.com/lrz8023nolan/metro-3d" target="_blank" rel="noopener">github.com/lrz8023nolan/metro-3d</a>
+    {{FOOTER_HTML}}
+    开源项目 · <a href="{{REPO_URL}}" target="_blank" rel="noopener">{{REPO_LABEL}}</a>
   </div>
 </div>
 
@@ -153,6 +151,7 @@
 <div id="fatal"><div>当前环境不支持 WebGL，无法渲染三维视图。<br>请用 Edge / Chrome 打开本文件。</div></div>
 <div id="err"></div>
 
+<script>window.METRO_APP = {"version": "{{VERSION}}", "repo": "{{REPO_URL}}"};</script>
 <script>/*__THREE__*/</script>
 <script>/*__DATA__*/</script>
 <script>

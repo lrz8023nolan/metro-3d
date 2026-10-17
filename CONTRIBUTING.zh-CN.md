@@ -16,13 +16,14 @@
 
 ## 新增城市
 
-1. 按 [docs/schema.zh-CN.md](docs/schema.zh-CN.md) 创建 `cities/<city-id>/`：
-   `city.json`、`build_config.json`、`terrain_grid.csv` 及逐线属性表。
-2. 运行 `python tests/validate_data.py`——目前校验固定指向北京，欢迎为其
-   加上 `--city` 参数并适配你的城市。
-3. 运行 `python scripts/build.py --city <city-id>`，应在无错误的情况下产出
-   `dist/<city-id>.html`；有条件的话再跑 `node tests/verify_render.js`。
-4. 提交 PR，说明数据来源与许可。
+1. 创建 `cities/<city-id>/`，放入 **`city.json`** 即可（唯一的必需文件）；
+   可选文件（`build_config.json`、`terrain_grid.csv`、逐线属性表）见
+   [docs/schema.zh-CN.md](docs/schema.zh-CN.md)。
+2. 校验：`python tests/validate_data.py --city <city-id>`。
+3. 构建：`python scripts/build.py --city <city-id>` → `dist/<city-id>.html`；
+   用 `--all` 可重建全部城市与索引页。
+4. 有条件的话运行 `node tests/verify_render.js <city-id>` 做渲染自检。
+5. 提交 PR，说明数据来源与许可。
 
 ## 数据质量规则
 

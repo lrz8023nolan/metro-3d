@@ -1,11 +1,13 @@
 {
   "name": "metro-3d",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Vertical-exaggerated, single-file 3D metro maps (Beijing first). 立体版地铁线路图。",
+  "description": "Vertical-exaggerated, single-file 3D metro maps built from open data. 立体地铁线路图生成器。",
+  "homepage": "https://github.com/lrz8023nolan/metro-3d",
   "scripts": {
-    "build": "python scripts/build.py --city beijing",
-    "test:data": "python tests/validate_data.py",
+    "build": "python scripts/build.py --all",
+    "build:beijing": "python scripts/build.py --city beijing",
+    "test:data": "python tests/validate_data.py --all",
     "test:render": "node tests/verify_render.js"
   },
   "devDependencies": {

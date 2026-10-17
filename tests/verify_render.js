@@ -12,7 +12,8 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { chromium } = require('playwright-core');
 
-const HTML = pathToFileURL(path.resolve(__dirname, '..', 'dist', 'beijing.html')).href;
+const CITY = process.argv[2] || 'beijing';
+const HTML = pathToFileURL(path.resolve(__dirname, '..', 'dist', `${CITY}.html`)).href;
 const OUT = path.resolve(__dirname, 'output');
 
 async function launch() {
@@ -63,40 +64,54 @@ async function waitTween(page) {
   await page.waitForTimeout(900);
   await page.screenshot({ path: path.join(OUT, 'd_k80.png') });
 
-  // 点击「东四」站（真值站）：固定视角 → 命中校验 → 点击（保证确定性）
+  // 点击一个站点（自动选最深的"实测"站；无实测则取首个地下站）：固定视角 → 命中校验 → 点击
   await page.$eval('#kRange', el => { el.value = 50; el.dispatchEvent(new Event('input')); });
   await page.click('#vIso');
   await waitTween(page);
-  await page.evaluate(() => {
-    const D = window.METRO_DATA, M = D.meta;
-    const st = D.lines.find(l => l.id === '6').stations.find(s => s.n === '东四');
-    const KX = 111320 * Math.cos(M.lat0 * Math.PI / 180);
-    const o = window.__debug.orbit;
-    o.target.x = (st.lon - M.lon0) * KX;
-    o.target.z = -(st.lat - M.lat0) * 110540;
-    o.target.y = -1200;
-    o.dist = 9000; o.phi = 1.30; o.theta = Math.PI / 2 - 0.3;
+  const target = await page.evaluate(() => {
+    const D = window.METRO_DATA;
+    let best = null, fallback = null;
+    D.lines.forEach(l => l.stations.forEach(s => {
+      const item = { name: s.n, lon: s.lon, lat: s.lat, dep: s.dep || 0 };
+      if (s.dk === 'truth' && (!best || item.dep > best.dep)) best = item;
+      if (!fallback && s.dk !== 'above') fallback = item;
+    }));
+    return best || fallback;
   });
-  await page.waitForTimeout(600);
-  const pos = await page.evaluate(() => {
-    const p = window.__debug.screenOf('东四');
-    if (!p) return null;
-    if (window.__debug.pick(p.x, p.y) === '东四') return { x: p.x, y: p.y, ok: true };
-    for (let dy = -40; dy <= 40; dy += 4) {
-      for (let dx = -24; dx <= 24; dx += 4) {
-        if (window.__debug.pick(p.x + dx, p.y + dy) === '东四') return { x: p.x + dx, y: p.y + dy, ok: true };
-      }
-    }
-    return { x: p.x, y: p.y, ok: false };
-  });
-  if (pos && pos.ok) {
-    await page.mouse.click(pos.x, pos.y);
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: path.join(OUT, 'e_card.png') });
-    const cardText = await page.$eval('#card', el => el.style.display !== 'none' ? el.innerText.replace(/\n+/g, ' | ') : '(卡片未打开)');
-    console.log('卡片内容:', cardText);
+  if (!target) {
+    console.log('未找到可点击站点');
   } else {
-    console.log('未定位到东四可点击位置（ok=' + (pos && pos.ok) + '），尝试坐标拾取:', await page.evaluate(() => window.__debug.pick(720, 430)));
+    console.log('点击测试目标:', target.name, '(' + target.dep + ' m)');
+    await page.evaluate((t) => {
+      const M = window.METRO_DATA.meta;
+      const KX = 111320 * Math.cos(M.lat0 * Math.PI / 180);
+      const o = window.__debug.orbit;
+      o.target.x = (t.lon - M.lon0) * KX;
+      o.target.z = -(t.lat - M.lat0) * 110540;
+      o.target.y = -1200;
+      o.dist = 9000; o.phi = 1.30; o.theta = Math.PI / 2 - 0.3;
+    }, target);
+    await page.waitForTimeout(600);
+    const pos = await page.evaluate((name) => {
+      const p = window.__debug.screenOf(name);
+      if (!p) return null;
+      if (window.__debug.pick(p.x, p.y) === name) return { x: p.x, y: p.y, ok: true };
+      for (let dy = -40; dy <= 40; dy += 4) {
+        for (let dx = -24; dx <= 24; dx += 4) {
+          if (window.__debug.pick(p.x + dx, p.y + dy) === name) return { x: p.x + dx, y: p.y + dy, ok: true };
+        }
+      }
+      return { x: p.x, y: p.y, ok: false };
+    }, target.name);
+    if (pos && pos.ok) {
+      await page.mouse.click(pos.x, pos.y);
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: path.join(OUT, 'e_card.png') });
+      const cardText = await page.$eval('#card', el => el.style.display !== 'none' ? el.innerText.replace(/\n+/g, ' | ') : '(卡片未打开)');
+      console.log('卡片内容:', cardText);
+    } else {
+      console.log('未定位到可点击位置（ok=' + (pos && pos.ok) + '），尝试坐标拾取:', await page.evaluate(() => window.__debug.pick(720, 430)));
+    }
   }
 
   // 线路开关：全隐 / 全显
